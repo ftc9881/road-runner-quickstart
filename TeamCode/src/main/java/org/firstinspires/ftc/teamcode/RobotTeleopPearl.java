@@ -74,7 +74,7 @@ public class RobotTeleopPearl extends LinearOpMode {
             extendoRight = hardwareMap.get(Servo.class, "extendoRight");
             extendoLeft = hardwareMap.get(Servo.class, "extendoLeft ");
             claw = hardwareMap.get(Servo.class, "claw");
-            arm = hardwareMap.get(Servo.class, "arm ");
+            arm = hardwareMap.get(Servo.class, "arm");
 
             int liftPosition = 0;
             boolean lastButtonX = false;
@@ -203,8 +203,8 @@ public class RobotTeleopPearl extends LinearOpMode {
 
                 int targetLiftPosition = liftPosition * (920 / 2);
 
-                double leftLiftPower = Math.max(-.3, Math.min(.3, (targetLiftPosition - leftLiftPos) / 200.0));
-                double rightLiftPower = Math.max(-.3, Math.min(.3, (targetLiftPosition - rightLiftPos) / 200.0));
+                double leftLiftPower = Math.max(-1, Math.min(1, (targetLiftPosition - leftLiftPos) / 200.0));
+                double rightLiftPower = Math.max(-1, Math.min(1, (targetLiftPosition - rightLiftPos) / 200.0));
 
                 leftLift.setPower(leftLiftPower);
                 rightLift.setPower(rightLiftPower);
