@@ -51,7 +51,7 @@ public class BucketAuto extends SimpleAuto {
                 .build();
 
         Action depositSample = drive.actionBuilder(beginPose)
-                .stopAndAdd(lift.liftPosition(920, 0.5))
+                .stopAndAdd(lift.liftPosition(920))
                 .waitSeconds(1)
                 .stopAndAdd(arm.backArm())
                 .waitSeconds(1)
@@ -61,7 +61,7 @@ public class BucketAuto extends SimpleAuto {
                 .waitSeconds(1)
                 .stopAndAdd(claw.closeClaw())
                 .waitSeconds(1)
-                .stopAndAdd(lift.liftPosition(0, 0))
+                .stopAndAdd(lift.liftPosition(0))
                 .waitSeconds(1)
                 .build();
 
@@ -78,7 +78,7 @@ public class BucketAuto extends SimpleAuto {
                 .lineToY(70)
                 .turn(- Math.PI / 2)
                 .lineToX(12)
-                .stopAndAdd(extendo.forwardExtendo())
+//                .stopAndAdd(extendo.forwardExtendo())
                 .waitSeconds(2)
                 .build();
 

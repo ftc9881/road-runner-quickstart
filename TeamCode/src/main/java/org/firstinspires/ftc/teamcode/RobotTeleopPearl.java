@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
@@ -56,7 +57,31 @@ public class RobotTeleopPearl extends LinearOpMode {
         public Servo extendoLeft = null;
         public Servo extendoRight = null;
         public Servo claw = null;
+        public Servo backclaw = null;
         public Servo arm = null;
+        public Servo pivot = null;
+
+        public CRServo intake = null;
+
+        public double CLAW_OPEN_POSITION = .56;
+        public double CLAW_CLOSED_POSITION = .33;
+
+        public double BACK_CLAW_OPEN_POSITION = .75;
+        public double BACK_CLAW_CLOSED_POSITION = .36;
+
+
+        public double ARM_FRONT_POSITION = .86;
+        public double ARM_MID_POSITION = .33;
+        public double ARM_BACK_POSITION = .25;
+
+        public double EXTENDO_IN_RIGHT_POSITION = 1;
+        public double EXTENDO_IN_LEFT_POSITION = 0;
+
+        public double EXTENDO_OUT_RIGHT_POSITION = 0.62;
+        public double EXTENDO_OUT_LEFT_POSITION = 0.70;
+
+        public double PIVOT_DOWN_POSITION = .1;
+        public double PIVOT_UP_POSITION = .9;
 
         /*
          * Code to run ONCE when the driver hits INIT
@@ -74,27 +99,68 @@ public class RobotTeleopPearl extends LinearOpMode {
             extendoRight = hardwareMap.get(Servo.class, "extendoRight");
             extendoLeft = hardwareMap.get(Servo.class, "extendoLeft ");
             claw = hardwareMap.get(Servo.class, "claw");
+            backclaw = hardwareMap.get(Servo.class, "backclaw");
             arm = hardwareMap.get(Servo.class, "arm");
+            pivot = hardwareMap.get(Servo.class, "pivot");
+            intake = hardwareMap.get(CRServo.class, "intake");
+
+            // Extendo
+
+            boolean lastButtonA = false;
+
+            boolean extendoOut = false;
+
+            double extendoLeftPosition = EXTENDO_IN_LEFT_POSITION;
+            double extendoRightPosition = EXTENDO_IN_RIGHT_POSITION;
+
+            extendoRight.setPosition(extendoRightPosition);
+            extendoLeft.setPosition(extendoLeftPosition);
+
+            // Pivot
+
+            boolean lastButtonB = false;
+
+            boolean pivotDown = false;
+
+            double pivotPosition = PIVOT_UP_POSITION;
+
+            pivot.setPosition(pivotPosition);
+
+            // Claw
+
+            boolean clawOpen = false;
+            double clawPosition = CLAW_CLOSED_POSITION; // for some reason closed is open.
+            boolean lastRightBumper = false;
+
+            claw.setPosition(clawPosition);
+
+            // Back Claw
+
+            boolean backClawOpen = false;
+            double backClawPosition = BACK_CLAW_CLOSED_POSITION;
+            boolean lastY = false;
+
+            backclaw.setPosition(backClawPosition);
+
+            // Arm
+
+            boolean armForward = true;
+            double armPosition = ARM_FRONT_POSITION;
+            boolean lastButtonX = false;
+
+            arm.setPosition(armPosition);
+
+            // Lift
 
             int liftPosition = 0;
-            boolean lastButtonX = false;
-            boolean lastButtonY = false;
 
-            double clawPosition = .56;
-            double armPosition = .86;
-
-            extendoRight.setPosition(1);
-            extendoLeft.setPosition(0);
-            claw.setPosition(clawPosition);
-            arm.setPosition(armPosition);
+            boolean lastDPadDown = false;
+            boolean lastDPadUp = false;
 
             leftLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             rightLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             leftLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-//            extendoLeft = hardwareMap.get(Servo.class, "extendoLeft");
-//            extendoRight = hardwareMap.get(Servo.class, "extendoRight");
 
             leftFront.setDirection(DcMotor.Direction.REVERSE);
             leftBack.setDirection(DcMotor.Direction.REVERSE);
@@ -110,42 +176,9 @@ public class RobotTeleopPearl extends LinearOpMode {
             rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-
-//            double kP=0.00, kI=0.00, kD=0.00;
-//            int setPoint=0;
-//            int measuredPosition=0;
-//            // specify coefficients/gains
-//            PIDCoefficients coefficients = new PIDCoefficients();
-//            //PIDCoefficients coefficients = new PIDCoefficients(kP, kI, kD);
-//            // create the controller
-//            PIDFController controller = new PIDFController(coefficients);
-
-            // specify the setPoint
-//            controller.setTargetPosition(setPoint);
-
-            // in each iteration of the control loop
-            // measure the position or output variable
-            // apply the correction to the input variable
-//            double correction = controller.update(measuredPosition);
-
             waitForStart();
 
             if (isStopRequested()) return;
-            boolean yButton2 = false;
-            boolean bButton1 = false;
-            boolean bButton2 = false;
-            boolean aButton2 = false;
-            boolean bom = false;
-            boolean aminal = false;
-
-
-
-            boolean checkExtendo = false;
-            int num = 0;
-
-            double extendoLeftTargetPos = 0.16;
-            double extendoRightTargetPos = 0.16;
-
 
             while (opModeIsActive()) {
                 double y = -gamepad1.left_stick_y; // Remember, Y stick value is reversed
@@ -164,26 +197,11 @@ public class RobotTeleopPearl extends LinearOpMode {
                 double frontRightPower = (y - x - rx) / denominator;
                 double backRightPower = (y + x - rx) / denominator;
 
-//            if(gamepad1.a){
-//                lift.setPower(-.04);
-//            }
-//            if(gamepad1.y){
-//                lift.setPower(.04);
-//            }
-//            if(gamepad1.b) {
-//                lift.setPower(0);
-//            }
                 if (gamepad1.left_bumper) {
                     frontLeftPower *= .25;
                     backLeftPower *= .25;
                     frontRightPower *= .25;
                     backRightPower *= .25;
-                }
-                if (gamepad1.right_bumper) {
-                    frontLeftPower *= .5;
-                    backLeftPower *= .5;
-                    frontRightPower *= .5;
-                    backRightPower *= .5;
                 }
 
                 leftFront.setPower(frontLeftPower);
@@ -191,15 +209,18 @@ public class RobotTeleopPearl extends LinearOpMode {
                 rightFront.setPower(frontRightPower);
                 rightBack.setPower(backRightPower);
 
-                //lift
+                // lift
 
-                if(gamepad1.x && !lastButtonX && liftPosition > 0) {
+                if(gamepad1.dpad_down && !lastDPadDown && liftPosition > 0) {
                     liftPosition = liftPosition - 1;
                 }
 
-                if(gamepad1.y && !lastButtonY && liftPosition < 2) {
+                if(gamepad1.dpad_up && !lastDPadUp && liftPosition < 2) {
                     liftPosition = liftPosition + 1;
                 }
+
+                lastDPadDown = gamepad1.dpad_down;
+                lastDPadUp = gamepad1.dpad_up;
 
                 int targetLiftPosition = liftPosition * (920 / 2);
 
@@ -209,37 +230,6 @@ public class RobotTeleopPearl extends LinearOpMode {
                 leftLift.setPower(leftLiftPower);
                 rightLift.setPower(rightLiftPower);
 
-//                if(gamepad1.x){
-//                    if(leftLiftPos < 920) {
-//                        leftLift.setPower(.3 * Math.min(1, (920 - leftLiftPos) / 50));
-//                    } else {
-//                        leftLift.setPower(0);
-//                    }
-//
-//                    if(rightLiftPos < 920) {
-//                        rightLift.setPower(.3 * Math.min(1, (920 - rightLiftPos) / 50));
-//                    } else {
-//                        rightLift.setPower(0);
-//                    }
-//                }
-//                else if(gamepad1.y){
-//                    if(leftLiftPos >= 0) {
-//                        leftLift.setPower(-.30 * Math.min(1, leftLiftPos / 50));
-//                    } else {
-//                        leftLift.setPower(0);
-//                    }
-//
-//                    if(rightLiftPos >= 0) {
-//                        rightLift.setPower(-.30 * Math.min(1, rightLiftPos / 50));
-//                    } else {
-//                        rightLift.setPower(0);
-//                    }
-//                }
-//                else {
-//                    leftLift.setPower(0);
-//                    rightLift.setPower(0);
-//                }
-
                 telemetry.addData("liftPosition: ", liftPosition);
                 telemetry.addData("targetLiftPosition: ", targetLiftPosition);
                 telemetry.addData("leftLiftPos: ", leftLiftPos);
@@ -247,47 +237,111 @@ public class RobotTeleopPearl extends LinearOpMode {
                 telemetry.addData("leftLiftPower: ", leftLiftPower);
                 telemetry.addData("rightLiftPower: ", rightLiftPower);
 
-                // servos
+                // Servos
 
-                if(gamepad1.a) {
-                    extendoRight.setPosition(1.0);
-                    extendoLeft.setPosition(0.0);
+                // Extendo spasm
 
-                }
                 if (gamepad1.b) {
-                    extendoRight.setPosition(0.62);
-                    extendoLeft.setPosition(0.70);
+                    extendoRight.setPosition(EXTENDO_OUT_RIGHT_POSITION);
+                    extendoLeft.setPosition(EXTENDO_OUT_LEFT_POSITION);
                 }
 
-                if (gamepad1.right_bumper) {
-                    clawPosition = .56;
-                } else if (gamepad1.left_bumper) {
-                    clawPosition = .33;
+                // Claw
+
+                if (gamepad1.right_bumper && !lastRightBumper) {
+                    clawOpen = !clawOpen;
+                }
+
+                lastRightBumper = gamepad1.right_bumper;
+
+                if(clawOpen) {
+                    clawPosition = CLAW_OPEN_POSITION;
+                } else {
+                    clawPosition = CLAW_CLOSED_POSITION;
                 }
 
                 claw.setPosition(clawPosition);
                 telemetry.addData("clawPosition: ", clawPosition);
 
-                if (gamepad1.dpad_up) {
-                    armPosition = .05;
+                // Back Claw
+
+                if (gamepad1.y && !lastY) {
+                    backClawOpen = !backClawOpen;
                 }
-                else if (gamepad1.dpad_down) {
-                    armPosition = .86;
+
+                lastY = gamepad1.y;
+
+                if(backClawOpen) {
+                    backClawPosition = BACK_CLAW_OPEN_POSITION;
+                } else {
+                    backClawPosition = BACK_CLAW_CLOSED_POSITION;
                 }
-                else if (gamepad1.dpad_right) {
-                    armPosition = .33;
+
+                backclaw.setPosition(backClawPosition);
+                telemetry.addData("backClawPosition: ", backClawPosition);
+
+                // Arm
+
+                if (gamepad1.x && !lastButtonX) {
+                    armForward = !armForward;
+                }
+
+                lastButtonX = gamepad1.x;
+
+                if(armForward) {
+                    armPosition = ARM_FRONT_POSITION;
+                } else {
+                    armPosition = ARM_MID_POSITION;
                 }
 
                 arm.setPosition(armPosition);
                 telemetry.addData("armPosition: ", armPosition);
 
-                lastButtonX = gamepad1.x;
-                lastButtonY = gamepad1.y;
-//
-//
-//                extendoLeft.setPosition(extendoLeftTargetPos);
-//                extendoRight.setPosition(extendoRightTargetPos);
- //               telemetry.addData("Extendo", extendoLeftTargetPos);
+                // Extendo
+
+                if (gamepad1.a && !lastButtonA) {
+                    extendoOut = !extendoOut;
+                }
+
+                lastButtonA = gamepad1.a;
+
+                if(extendoOut) {
+                    extendoLeftPosition = EXTENDO_OUT_LEFT_POSITION;
+                    extendoRightPosition = EXTENDO_OUT_RIGHT_POSITION;
+                } else {
+                    extendoLeftPosition = EXTENDO_IN_LEFT_POSITION;
+                    extendoRightPosition = EXTENDO_IN_RIGHT_POSITION;
+
+                    pivotDown = false;
+                }
+
+                extendoLeft.setPosition(extendoLeftPosition);
+                extendoRight.setPosition(extendoRightPosition);
+
+                // Pivot
+
+                if (gamepad1.b && !lastButtonB) {
+                    pivotDown = !pivotDown;
+                }
+
+                if(!extendoOut) {
+                    pivotDown = false;
+                }
+
+                lastButtonB = gamepad1.b;
+
+                if(pivotDown) {
+                    pivotPosition = PIVOT_DOWN_POSITION;
+                } else {
+                    pivotPosition = PIVOT_UP_POSITION;
+                }
+
+                pivot.setPosition(pivotPosition);
+                telemetry.addData("pivotPosition: ", pivotPosition);
+
+                // Intake
+
+                intake.setPower(gamepad1.left_trigger - gamepad1.right_trigger);
 
                 telemetry.update();
             }

@@ -43,13 +43,14 @@ public abstract class SimpleAuto extends LinearOpMode {
             private boolean initialized = false;
 
             private int targetPosition = 920;
-            private double stopPower = .2;
 
             private int counter = 0;
 
-            public LiftPosition(int targetPosition, double stopPower) {
+            private double totalLeftPower = 0;
+            private double totalRightPower = 0;
+
+            public LiftPosition(int targetPosition) {
                 this.targetPosition = targetPosition;
-                this.stopPower = stopPower;
             }
 
             @Override
@@ -69,33 +70,44 @@ public abstract class SimpleAuto extends LinearOpMode {
                 leftLift.setPower(leftLiftPower);
                 rightLift.setPower(rightLiftPower);
 
-                boolean isDone = Math.min(
+                boolean isWithinRange = Math.min(
                         Math.abs(rightLiftPos - targetPosition),
                         Math.abs(leftLiftPos - targetPosition)
                 ) < 50;
 
-                boolean isVeryDone = true;
+                boolean isDone = true;
 
-                if(isDone) {
+                if(isWithinRange) {
                     ++counter;
 
+                    totalLeftPower += leftLiftPower;
+                    totalRightPower += rightLiftPower;
+
                     if(counter > 200) {
-                        leftLift.setPower(stopPower);
-                        rightLift.setPower(stopPower);
-                        isVeryDone = true;
+                        // THe lift has been within range for 200 cycles, so
+                        // set the power to the average value over those
+                        // 200 cycles since that will likely preseve the lift
+                        // in the current location
+
+                        leftLift.setPower(totalLeftPower / (double)counter);
+                        rightLift.setPower(totalLeftPower / (double)counter);
+
+                        isDone = true;
                     } else {
-                        isVeryDone = false;
+                        isDone = false;
                     }
                 } else {
                     counter = 0;
+                    totalLeftPower = 0;
+                    totalRightPower = 0;
                 }
 
-                return isVeryDone;
+                return isDone;
             }
         }
 
-        public Action liftPosition(int targetPosition, double stopPower) {
-            return new LiftPosition(targetPosition, stopPower);
+        public Action liftPosition(int targetPosition) {
+            return new LiftPosition(targetPosition);
         }
     }
 
