@@ -11,10 +11,9 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 @Autonomous(name="Hook Auto", group="Roadrunner")
 public class HookAuto extends SimpleAuto {
-
     @Override
     public void runOpMode() throws InterruptedException {
-        Lift lift = new Lift(hardwareMap, 200, -1, 1);
+        Lift lift = new Lift(hardwareMap);
 
         BackClaw backClaw = new BackClaw(hardwareMap);
         Extendo extendo = new Extendo(hardwareMap);
@@ -38,20 +37,29 @@ public class HookAuto extends SimpleAuto {
         waitForStart();
 
         Action getInPosition = drive.actionBuilder(beginPose)
-                .lineToX(-16)
-                .waitSeconds(1)
-                .stopAndAdd(lift.liftPosition(460))
-                .waitSeconds(1)
-                .lineToX(-20)
-                .stopAndAdd(lift.liftPosition(400))
-                .stopAndAdd(backClaw.openClaw())
-                .lineToX(-18)
-                .waitSeconds(1)
+                .afterTime(0, lift.liftPosition(575))
+                .lineToX(-24.5)
+                .waitSeconds(0.07)
+                .stopAndAdd(lift.liftPosition(390))
+                .afterTime(0.03, backClaw.openClaw())
                 .build();
+
+        Action Park = drive.actionBuilder(beginPose)
+
+/*===========================================================================================================
+                Parks (duh)
+===========================================================================================================*/
+                .strafeTo(new Vector2d(0, -62))
+                .afterTime(0.03, lift.liftPosition(0))
+                .turnTo(-1.1*Math.PI/2)
+                .strafeTo(new Vector2d(0, -70))
+                .build();
+
 
         Actions.runBlocking(
                 new SequentialAction(
-                        getInPosition
+                        getInPosition,
+                        Park
                 )
         );
     }
