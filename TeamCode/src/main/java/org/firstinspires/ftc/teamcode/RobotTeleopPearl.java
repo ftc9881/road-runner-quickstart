@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -53,7 +54,6 @@ public class RobotTeleopPearl extends LinearOpMode {
         public DcMotor leftLift = null;
         public DcMotor rightLift = null;
 
-
         public Servo extendoLeft = null;
         public Servo extendoRight = null;
         public Servo claw = null;
@@ -63,25 +63,32 @@ public class RobotTeleopPearl extends LinearOpMode {
 
         public CRServo intake = null;
 
-        public double CLAW_OPEN_POSITION = .56;
-        public double CLAW_CLOSED_POSITION = .33;
+        public static double CLAW_OPEN_POSITION = .56;
+        public static double CLAW_CLOSED_POSITION = .33;
 
-        public double BACK_CLAW_OPEN_POSITION = .75;
-        public double BACK_CLAW_CLOSED_POSITION = .36;
+        public static double BACK_CLAW_OPEN_POSITION = .4;
+        public static double BACK_CLAW_CLOSED_POSITION = .78;
 
 
-        public double ARM_FRONT_POSITION = .86;
-        public double ARM_MID_POSITION = .33;
-        public double ARM_BACK_POSITION = .25;
+        public static double ARM_FRONT_POSITION = .85;
+        public static double ARM_MID_POSITION = .28;
+        public static double ARM_BACK_POSITION = .25;
 
-        public double EXTENDO_IN_RIGHT_POSITION = 1;
-        public double EXTENDO_IN_LEFT_POSITION = 0;
+        public static double EXTENDO_IN_RIGHT_POSITION = 1;
+        public static double EXTENDO_IN_LEFT_POSITION = 0;
 
-        public double EXTENDO_OUT_RIGHT_POSITION = 0.62;
-        public double EXTENDO_OUT_LEFT_POSITION = 0.70;
+        public static double EXTENDO_OUT_RIGHT_POSITION = 0.645;
+        public static double EXTENDO_OUT_LEFT_POSITION = 0.69;
 
-        public double PIVOT_DOWN_POSITION = .1;
-        public double PIVOT_UP_POSITION = .9;
+        public static double PIVOT_DOWN_POSITION = .15;
+        public static double PIVOT_UP_POSITION = .94;
+
+        public static int LIFT_HEIGHTS[] = {
+                0,
+                340,
+                520,
+                840
+        };
 
         /*
          * Code to run ONCE when the driver hits INIT
@@ -93,8 +100,9 @@ public class RobotTeleopPearl extends LinearOpMode {
             rightFront = hardwareMap.get(DcMotor.class, "rightFront");
             leftBack = hardwareMap.get(DcMotor.class, "leftBack");
             rightBack = hardwareMap.get(DcMotor.class, "rightBack");
-            leftLift = hardwareMap.get(DcMotor.class, "leftLift");
-            rightLift = hardwareMap.get(DcMotor.class, "rightLift");
+
+            leftLift = hardwareMap.get(DcMotorEx.class, "leftLift");
+            rightLift = hardwareMap.get(DcMotorEx.class, "rightLift");
 
             extendoRight = hardwareMap.get(Servo.class, "extendoRight");
             extendoLeft = hardwareMap.get(Servo.class, "extendoLeft ");
@@ -103,6 +111,19 @@ public class RobotTeleopPearl extends LinearOpMode {
             arm = hardwareMap.get(Servo.class, "arm");
             pivot = hardwareMap.get(Servo.class, "pivot");
             intake = hardwareMap.get(CRServo.class, "intake");
+
+            // Drive
+
+            leftFront.setDirection(DcMotor.Direction.REVERSE);
+            leftBack.setDirection(DcMotor.Direction.REVERSE);
+            rightFront.setDirection(DcMotor.Direction.FORWARD);
+            rightBack.setDirection(DcMotor.Direction.FORWARD);
+
+            // If there are encoders connected, switch to RUN_USING_ENCODER mode for greater accuracy
+            leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
             // Extendo
 
@@ -136,9 +157,10 @@ public class RobotTeleopPearl extends LinearOpMode {
 
             // Back Claw
 
-            boolean backClawOpen = false;
-            double backClawPosition = BACK_CLAW_CLOSED_POSITION;
+            boolean backClawOpen = true;
+            double backClawPosition = BACK_CLAW_OPEN_POSITION;
             boolean lastY = false;
+            boolean last2Y = false;
 
             backclaw.setPosition(backClawPosition);
 
@@ -152,29 +174,25 @@ public class RobotTeleopPearl extends LinearOpMode {
 
             // Lift
 
-            int liftPosition = 0;
+            int liftLevel = 0;
 
             boolean lastDPadDown = false;
             boolean lastDPadUp = false;
 
             leftLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             rightLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            leftLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-            leftFront.setDirection(DcMotor.Direction.REVERSE);
-            leftBack.setDirection(DcMotor.Direction.REVERSE);
-            rightFront.setDirection(DcMotor.Direction.FORWARD);
-            rightBack.setDirection(DcMotor.Direction.FORWARD);
 
             leftLift.setDirection(DcMotor.Direction.REVERSE);
             rightLift.setDirection(DcMotor.Direction.FORWARD);
 
-            // If there are encoders connected, switch to RUN_USING_ENCODER mode for greater accuracy
-            leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            leftLift.setTargetPosition(0);
+            rightLift.setTargetPosition(0);
+
+            leftLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            rightLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            leftLift.setPower(1);
+            rightLift.setPower(1);
 
             waitForStart();
 
@@ -183,7 +201,7 @@ public class RobotTeleopPearl extends LinearOpMode {
             while (opModeIsActive()) {
                 double y = -gamepad1.left_stick_y; // Remember, Y stick value is reversed
                 double x = gamepad1.left_stick_x * 1.05; // Counteract imperfect strafing
-                double rx = gamepad1.right_stick_x;
+                double rx = gamepad1.right_stick_x * 0.8; // added coefficient to make turning less sharp
 
                 int rightLiftPos = rightLift.getCurrentPosition();
                 int leftLiftPos = leftLift.getCurrentPosition();
@@ -198,10 +216,10 @@ public class RobotTeleopPearl extends LinearOpMode {
                 double backRightPower = (y + x - rx) / denominator;
 
                 if (gamepad1.left_bumper) {
-                    frontLeftPower *= .25;
-                    backLeftPower *= .25;
-                    frontRightPower *= .25;
-                    backRightPower *= .25;
+                    frontLeftPower *= .33;
+                    backLeftPower *= .33;
+                    frontRightPower *= .33;
+                    backRightPower *= .33;
                 }
 
                 leftFront.setPower(frontLeftPower);
@@ -211,40 +229,54 @@ public class RobotTeleopPearl extends LinearOpMode {
 
                 // lift
 
-                if(gamepad1.dpad_down && !lastDPadDown && liftPosition > 0) {
-                    liftPosition = liftPosition - 1;
+                if(gamepad2.dpad_down && !lastDPadDown && liftLevel > 0) { //changed to gamepad 2
+                    liftLevel = liftLevel - 1;
                 }
 
-                if(gamepad1.dpad_up && !lastDPadUp && liftPosition < 2) {
-                    liftPosition = liftPosition + 1;
+                if(gamepad2.dpad_up && !lastDPadUp && liftLevel < LIFT_HEIGHTS.length - 1) {
+                    liftLevel = liftLevel + 1;
                 }
 
-                lastDPadDown = gamepad1.dpad_down;
-                lastDPadUp = gamepad1.dpad_up;
+                lastDPadDown = gamepad2.dpad_down;
+                lastDPadUp = gamepad2.dpad_up;
 
-                int targetLiftPosition = liftPosition * (920 / 2);
+                // single button auto lift toggle
 
-                double leftLiftPower = Math.max(-1, Math.min(1, (targetLiftPosition - leftLiftPos) / 200.0));
-                double rightLiftPower = Math.max(-1, Math.min(1, (targetLiftPosition - rightLiftPos) / 200.0));
+                if(gamepad1.y && !lastY && liftLevel > 0) {
+                    armForward = true;
+                    liftLevel = 0;
+                }
 
-                leftLift.setPower(leftLiftPower);
-                rightLift.setPower(rightLiftPower);
+                else if(gamepad1.y && !lastY && liftLevel == 0) {
+                    armForward = false;
+                    liftLevel = 3;
+                }
 
-                telemetry.addData("liftPosition: ", liftPosition);
+                lastY = gamepad1.y;
+
+                // controller 2 specimen scoring control
+
+                if (gamepad2.right_bumper) {
+                    //set lift to be the height for approaching specimen rack
+                    //always have this one go to the max height
+                }
+
+                if (gamepad2.left_bumper) {
+                    //lower the lift to the end point of specimen scoring
+                    //dont make it go all the way down immediately, but it will be able to drop down to zero
+                }
+
+                int targetLiftPosition = LIFT_HEIGHTS[liftLevel];
+
+                leftLift.setTargetPosition(targetLiftPosition);
+                rightLift.setTargetPosition(targetLiftPosition);
+
+                telemetry.addData("liftPosition: ", liftLevel);
                 telemetry.addData("targetLiftPosition: ", targetLiftPosition);
                 telemetry.addData("leftLiftPos: ", leftLiftPos);
                 telemetry.addData("rightLiftPos: ", rightLiftPos);
-                telemetry.addData("leftLiftPower: ", leftLiftPower);
-                telemetry.addData("rightLiftPower: ", rightLiftPower);
 
                 // Servos
-
-                // Extendo spasm
-
-                if (gamepad1.b) {
-                    extendoRight.setPosition(EXTENDO_OUT_RIGHT_POSITION);
-                    extendoLeft.setPosition(EXTENDO_OUT_LEFT_POSITION);
-                }
 
                 // Claw
 
@@ -265,11 +297,11 @@ public class RobotTeleopPearl extends LinearOpMode {
 
                 // Back Claw
 
-                if (gamepad1.y && !lastY) {
+                if (gamepad2.y && !last2Y) {
                     backClawOpen = !backClawOpen;
                 }
 
-                lastY = gamepad1.y;
+                last2Y = gamepad2.y;
 
                 if(backClawOpen) {
                     backClawPosition = BACK_CLAW_OPEN_POSITION;
