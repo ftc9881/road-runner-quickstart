@@ -26,7 +26,7 @@ public final class PIDFController {
         double compute(double position, @Nullable Double velocity);
     }
 
-    private final PIDCoefficients pid;
+    public final PIDCoefficients pid;
     private final double kV, kA, kStatic;
     private final FeedforwardFun kF;
 
