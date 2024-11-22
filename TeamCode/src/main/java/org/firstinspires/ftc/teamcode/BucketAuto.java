@@ -5,17 +5,28 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
+import com.acmerobotics.roadrunner.ftc.FlightRecorder;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 @Autonomous(name="Bucket Auto", group="Roadrunner")
 public class BucketAuto extends SimpleAuto {
+    public static class Params {
+        public double waitTime = .1;
+    }
+
+    public static BucketAuto.Params PARAMS = new BucketAuto.Params();
+
+    public BucketAuto() {
+        super();
+        FlightRecorder.write("BUCKET_AUTO_PARAMS", PARAMS);
+    }
 
     @Override
     public void runOpMode() throws InterruptedException {
-        Lift lift = new Lift(hardwareMap, 400, -.5, .5);
+        Lift lift = new Lift(hardwareMap);
         Claw claw = new Claw(hardwareMap);
         Arm arm = new Arm(hardwareMap);
         Extendo extendo = new Extendo(hardwareMap);
@@ -44,23 +55,22 @@ public class BucketAuto extends SimpleAuto {
 
         Action cornerPosition = drive.actionBuilder(beginPose)
                 .strafeTo(new Vector2d(0, 8))
-                .waitSeconds(.1)
+                .waitSeconds(PARAMS.waitTime)
                 .lineToX(-13)
-                .waitSeconds(.1)
+                .waitSeconds(PARAMS.waitTime)
                 .turn(Math.PI / 4)
                 .build();
 
         Action depositSample = drive.actionBuilder(beginPose)
                 .stopAndAdd(lift.liftPosition(920))
-                .waitSeconds(1)
                 .stopAndAdd(arm.backArm())
                 .waitSeconds(1)
                 .stopAndAdd(claw.openClaw())
                 .waitSeconds(1)
                 .stopAndAdd(arm.frontArm())
                 .waitSeconds(1)
-                .stopAndAdd(claw.closeClaw())
-                .waitSeconds(1)
+//                .stopAndAdd(claw.closeClaw())
+//                .waitSeconds(1)
                 .stopAndAdd(lift.liftPosition(0))
                 .waitSeconds(1)
                 .build();
@@ -75,12 +85,13 @@ public class BucketAuto extends SimpleAuto {
 
         Action parkSimple = drive.actionBuilder(beginPose)
                 .splineTo(new Vector2d(6, 14), Math.PI / 2)
-                .lineToY(70)
-                .turn(- Math.PI / 2)
-                .lineToX(12)
-//                .stopAndAdd(extendo.forwardExtendo())
+                .lineToY(51)
+                .turn(+ Math.PI / 2)
+                .lineToX(15)
+                .stopAndAdd(arm.midArm())
                 .waitSeconds(2)
                 .build();
+
 
         Actions.runBlocking(
                 new SequentialAction(
