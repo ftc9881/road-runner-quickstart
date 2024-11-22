@@ -6,13 +6,16 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp(name="Test Lift", group="Robot")
 //@Disabled
 public class TestLift extends LinearOpMode {
-    public DcMotor leftLift = null;
-    public DcMotor rightLift = null;
+    public DcMotorEx leftLift = null;
+    public DcMotorEx rightLift = null;
 
     public PIDFController leftLiftPID = null;
     public PIDFController rightLiftPID = null;
@@ -26,8 +29,8 @@ public class TestLift extends LinearOpMode {
 
         // Define and Initialize Motors
 
-        leftLift = hardwareMap.get(DcMotor.class, "leftLift");
-        rightLift = hardwareMap.get(DcMotor.class, "rightLift");
+        leftLift = hardwareMap.get(DcMotorEx.class, "leftLift");
+        rightLift = hardwareMap.get(DcMotorEx.class, "rightLift");
 
         // Lift
 
@@ -38,30 +41,37 @@ public class TestLift extends LinearOpMode {
 
         leftLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         leftLift.setDirection(DcMotor.Direction.REVERSE);
         rightLift.setDirection(DcMotor.Direction.FORWARD);
 
-        leftLiftPID = new PIDFController(
-                new PIDFController.PIDCoefficients(.005, 0, 0)
-        );
+        leftLift.setTargetPosition(0);
+        rightLift.setTargetPosition(0);
 
-        rightLiftPID = new PIDFController(
-                new PIDFController.PIDCoefficients(.005, 0, 0)
-        );
+        leftLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-//        leftLiftPID.setInputBounds(-100, 100);
-//        rightLiftPID.setInputBounds(-100, 100);
+        leftLift.setPower(.75);
+        rightLift.setPower(.75);
 
-        leftLiftPID.setOutputBounds(-.5, .75);
-        rightLiftPID.setOutputBounds(-.5, .75);
+//        leftLiftPID = new PIDFController(
+//                new PIDFController.PIDCoefficients(.0055, 0, 0)
+//        );
+//
+//        rightLiftPID = new PIDFController(
+//                new PIDFController.PIDCoefficients(.0055, 0, 0)
+//        );
+//
+////        leftLiftPID.setInputBounds(-100, 100);
+////        rightLiftPID.setInputBounds(-100, 100);
+//
+//        leftLiftPID.setOutputBounds(-.5, .75);
+//        rightLiftPID.setOutputBounds(-.5, .75);
 
         waitForStart();
 
-        leftLiftPID.reset();
-        rightLiftPID.reset();
+//        leftLiftPID.reset();
+//        rightLiftPID.reset();
 
         if (isStopRequested()) return;
 
@@ -81,27 +91,34 @@ public class TestLift extends LinearOpMode {
 
             int targetLiftPosition = liftPosition * (920 / 2);
 
-            leftLiftPID.targetPosition = targetLiftPosition;
-            rightLiftPID.targetPosition = targetLiftPosition;
-
-            int leftLiftPos = leftLift.getCurrentPosition();
-            int rightLiftPos = rightLift.getCurrentPosition();
-
-            double leftLiftPower = leftLiftPID.update(leftLiftPos);
-            double rightLiftPower = leftLiftPID.update(rightLiftPos);
+//            leftLiftPID.targetPosition = targetLiftPosition;
+//            rightLiftPID.targetPosition = targetLiftPosition;
+//
+//            int leftLiftPos = leftLift.getCurrentPosition();
+//            int rightLiftPos = rightLift.getCurrentPosition();
+//
+//            double leftLiftPower = leftLiftPID.update(leftLiftPos);
+//            double rightLiftPower = rightLiftPID.update(rightLiftPos);
 
 //                double leftLiftPower = Math.max(-1, Math.min(1, (targetLiftPosition - leftLiftPos) / 200.0));
 //                double rightLiftPower = Math.max(-1, Math.min(1, (targetLiftPosition - rightLiftPos) / 200.0));
 
-            leftLift.setPower(leftLiftPower);
-            rightLift.setPower(rightLiftPower);
+            leftLift.setTargetPosition(targetLiftPosition);
+            rightLift.setTargetPosition(targetLiftPosition);
+//            leftLift.setPower(leftLiftPower);
+//            rightLift.setPower(rightLiftPower);
 
             telemetry.addData("liftPosition: ", liftPosition);
             telemetry.addData("targetLiftPosition: ", targetLiftPosition);
-            telemetry.addData("leftLiftPos: ", leftLiftPos);
-            telemetry.addData("rightLiftPos: ", rightLiftPos);
-            telemetry.addData("leftLiftPower: ", leftLiftPower);
-            telemetry.addData("rightLiftPower: ", rightLiftPower);
+//            telemetry.addData("leftLiftPos: ", leftLiftPos);
+//            telemetry.addData("rightLiftPos: ", rightLiftPos);
+//            telemetry.addData("leftLiftPower: ", leftLiftPower);
+//            telemetry.addData("rightLiftPower: ", rightLiftPower);
+
+            PIDFCoefficients pidModified = leftLift.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            telemetry.addData("P,I,D (modified)", "%.04f, %.04f, %.04f",
+                    pidModified.p, pidModified.i, pidModified.d);
 
             telemetry.update();
         }
