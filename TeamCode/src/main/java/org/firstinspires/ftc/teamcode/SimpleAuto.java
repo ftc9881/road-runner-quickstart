@@ -5,49 +5,49 @@ import androidx.annotation.NonNull;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 
 public abstract class SimpleAuto extends LinearOpMode {
+
+
     public class Lift {
         public DcMotor leftLift = null;
         public DcMotor rightLift = null;
+        // intake
+        public CRServo intake = null;
+        public PIDFController leftLiftPID = null;
 
-        double window = 200;
-        double maxPower = 1;
-        double minPower = -1;
+        public PIDFController rightLiftPID = null;
 
-        public Lift(HardwareMap hardwareMap, double window, double minPower, double maxPower) {
-            this.window = window;
-            this.minPower = minPower;
-            this.maxPower = maxPower;
-
+        public Lift(HardwareMap hardwareMap) {
             leftLift = hardwareMap.get(DcMotor.class, "leftLift");
             rightLift = hardwareMap.get(DcMotor.class, "rightLift");
 
+
             leftLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             rightLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            leftLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-            leftLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             leftLift.setDirection(DcMotor.Direction.REVERSE);
             rightLift.setDirection(DcMotor.Direction.FORWARD);
+
+            leftLift.setTargetPosition(0);
+            rightLift.setTargetPosition(0);
+
+            leftLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            rightLift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            leftLift.setPower(1);
+            rightLift.setPower(1);
         }
 
         public class LiftPosition implements Action {
             private boolean initialized = false;
 
-            private int targetPosition = 920;
-
-            private int counter = 0;
-
-            private double totalLeftPower = 0;
-            private double totalRightPower = 0;
+            private int targetPosition = 0;
 
             public LiftPosition(int targetPosition) {
                 this.targetPosition = targetPosition;
@@ -55,54 +55,18 @@ public abstract class SimpleAuto extends LinearOpMode {
 
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
+                leftLift.setTargetPosition(targetPosition);
+                rightLift.setTargetPosition(targetPosition);
+
                 int rightLiftPos = rightLift.getCurrentPosition();
                 int leftLiftPos = leftLift.getCurrentPosition();
-
-                packet.put("rightLiftPos", rightLiftPos);
-                packet.put("leftLiftPos", leftLiftPos);
-
-                double leftLiftPower = Math.max(minPower, Math.min(maxPower, (targetPosition - leftLiftPos) / window));
-                double rightLiftPower = Math.max(minPower, Math.min(maxPower, (targetPosition - rightLiftPos) / window));
-
-                packet.put("leftLiftPower", leftLiftPower);
-                packet.put("rightLiftPower", rightLiftPower);
-
-                leftLift.setPower(leftLiftPower);
-                rightLift.setPower(rightLiftPower);
 
                 boolean isWithinRange = Math.min(
                         Math.abs(rightLiftPos - targetPosition),
                         Math.abs(leftLiftPos - targetPosition)
-                ) < 50;
+                ) < 5;
 
-                boolean isDone = true;
-
-                if(isWithinRange) {
-                    ++counter;
-
-                    totalLeftPower += leftLiftPower;
-                    totalRightPower += rightLiftPower;
-
-                    if(counter > 200) {
-                        // THe lift has been within range for 200 cycles, so
-                        // set the power to the average value over those
-                        // 200 cycles since that will likely preseve the lift
-                        // in the current location
-
-                        leftLift.setPower(totalLeftPower / (double)counter);
-                        rightLift.setPower(totalLeftPower / (double)counter);
-
-                        isDone = true;
-                    } else {
-                        isDone = false;
-                    }
-                } else {
-                    counter = 0;
-                    totalLeftPower = 0;
-                    totalRightPower = 0;
-                }
-
-                return isDone;
+                return !isWithinRange;
             }
         }
 
@@ -182,7 +146,7 @@ public abstract class SimpleAuto extends LinearOpMode {
         public class BackArm implements Action {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
-                arm.setPosition(.25);
+                arm.setPosition(.29);
                 return false;
             }
         }
@@ -223,6 +187,7 @@ public abstract class SimpleAuto extends LinearOpMode {
             extendoLeft = hardwareMap.get(Servo.class, "extendoLeft ");
         }
 
+
         public class BackExtendo implements Action {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
@@ -239,8 +204,8 @@ public abstract class SimpleAuto extends LinearOpMode {
         public class ForwardExtendo implements Action {
             @Override
             public boolean run(@NonNull TelemetryPacket packet) {
-                extendoRight.setPosition(0.62);
-                extendoLeft.setPosition(0.70);
+                extendoRight.setPosition(0.645);
+                extendoLeft.setPosition(0.69);
 
                 return false;
             }
@@ -248,6 +213,60 @@ public abstract class SimpleAuto extends LinearOpMode {
         public Action forwardExtendo() {
             return new ForwardExtendo();
         }
+
+    }
+    public class Pivot{
+        private Servo pivot;
+
+
+        public Pivot(HardwareMap hardwareMap) {
+            pivot = hardwareMap.get(Servo.class, "pivot");
+        }
+
+        public class Down implements Action {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                pivot.setPosition(.15);
+                return false;
+            }
+        }
+        public Action down() {
+            return new Down();
+        }
+
+        public class Up implements Action {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                pivot.setPosition(.94);
+                return false;
+            }
+        }
+        public Action up() {
+            return new Up();
+        }
+    }
+    public class Intake{
+        private CRServo intake;
+
+        public Intake(HardwareMap hardwareMap) {
+            intake = hardwareMap.get(CRServo.class, "intake");
+        }
+        public class On implements Action {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                intake.setPower(-.6);
+                return false;
+            }
+        }
+        public Action on() {return new On();}
+        public class Off implements Action {
+            @Override
+            public boolean run(@NonNull TelemetryPacket packet) {
+                intake.setPower(0);
+                return false;
+            }
+        }
+        public Action off() {return new Off();}
 
     }
 
